@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Easy Digital Downloads - Software GitHub Sync
- * Plugin URI: http://dev7studios.com
+ * Plugin URI: https://github.com/Dev7studios/edd-software-github-sync
  * Description: Sync GitHub releases with EDD downloads that use Software Licensing
  * Version: 0.1.0
  * Author: Dev7studios
