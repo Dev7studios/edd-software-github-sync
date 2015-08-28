@@ -43,13 +43,21 @@ class Dev7EsgsWebhooks {
 		}
 
 		$enabled = get_post_meta( $post_id, '_dev7_esgs_enabled', true ) ? true : false;
+		$payload = file_get_contents( 'php://input' );
 		if ( ! $enabled ) {
+			header( $this->http_protocol() . ' 501 Not Implemented', true, 501 );
 			echo __( 'Error: Software GitHub Sync disabled', $this->text_domain ) . "\n";
 			exit;
 		}
 
-		$data = json_decode( file_get_contents( 'php://input' ) );
+		if ( $this->get_http_header( 'X-Github-Event' ) == 'ping' ) {
+			echo __( 'Hello GitHub!', $this->text_domain ) . "\n";
+			exit;
+		}
+
+		$data = json_decode( $payload );
 		if ( ! isset( $data->release ) ) {
+			header( $this->http_protocol() . ' 500 Internal Server Error', true, 500 );
 			echo __( 'Error: Invalid data', $this->text_domain ) . "\n";
 			exit;
 		}
@@ -61,6 +69,7 @@ class Dev7EsgsWebhooks {
 			// Check for ZIP
 			$file_parts = pathinfo( basename( $zip_url ) );
 			if ( $file_parts['extension'] != 'zip' ) {
+				header( $this->http_protocol() . ' 500 Internal Server Error', true, 500 );
 				echo __( 'Error: Release attachment is not a ZIP', $this->text_domain ) . "\n";
 				exit;
 			}
@@ -81,6 +90,7 @@ class Dev7EsgsWebhooks {
 			$filename = wp_unique_filename( $upload_path, $filename );
 
 			if ( @file_put_contents( $upload_path . $filename, $response['body'] ) === false ) {
+				header( $this->http_protocol() . ' 500 Internal Server Error', true, 500 );
 				echo sprintf( __( 'Error downloading %s', $this->text_domain ), $zip_url ) . "\n";
 				exit;
 			}
@@ -120,6 +130,27 @@ class Dev7EsgsWebhooks {
 
 		echo __( 'Finished', $this->text_domain ) . "\n";
 		exit;
+	}
+
+	protected function http_protocol() {
+		return isset( $_SERVER['SERVER_PROTOCOL'] ) && $_SERVER['SERVER_PROTOCOL'] ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.1';
+	}
+
+	protected function get_http_header( $key ) {
+		$headers = array();
+		if ( function_exists( 'getallheaders' ) ) {
+			$headers = getallheaders();
+		} else {
+			if ( is_array( $_SERVER ) ) {
+				foreach ( $_SERVER as $name => $value ) {
+					if ( substr( $name, 0, 5 ) == 'HTTP_' ) {
+						$headers[ str_replace( ' ', '-', ucwords( strtolower( str_replace( '_', ' ', substr( $name, 5 ) ) ) ) ) ] = $value;
+					}
+				}
+			}
+		}
+
+		return isset( $headers[ $key ] ) ? $headers[ $key ] : null;
 	}
 
 }
