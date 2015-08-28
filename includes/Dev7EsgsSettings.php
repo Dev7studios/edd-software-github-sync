@@ -27,6 +27,7 @@ class Dev7EsgsSettings {
 		$edd_file = get_post_meta( $post->ID, '_edd_sl_upgrade_file_key', true );
 
 		$enabled = get_post_meta( $post->ID, '_dev7_esgs_enabled', true ) ? true : false;
+		$secret  = get_post_meta( $post->ID, '_dev7_esgs_secret', true );
 
 		echo '<tr>';
 		echo '<td class="edd_field_type_text" colspan="2">';
@@ -38,6 +39,12 @@ class Dev7EsgsSettings {
 		echo '<ol>';
 		echo '<li>' . __( 'On your GitHub repository navigate to: <strong>Settings &gt; Webhooks &amp; services &gt; Add webhook</strong>', $this->text_domain ) . '</li>';
 		echo '<li>' . __( 'Enter this <strong>Payload URL:</strong>', $this->text_domain ) . ' <code>' . esc_url( home_url( 'dev7-esgs-webhook/' . $post->ID ) ) . '</code></li>';
+		echo '<li>';
+		echo __( 'Enter this <strong>Secret</strong> (optional):', $this->text_domain ) . ' <input type="text" size="60" name="dev7_esgs_secret" id="dev7_esgs_secret" value="' . esc_attr( $secret ) . '" /><br>';
+		if ( ! $secret ) {
+			echo sprintf( __( 'The <strong>Secret</strong> should be a long random string. Here is one we just generated that you can use:', $this->text_domain ), $name ) . ' <code>' . sha1( time() . $post->ID . home_url() ) . '</code>';
+		}
+		echo '</li>';
 		echo '<li>' . __( 'Select <strong>Let me select individual events</strong> and untick "Push" and tick "Release"', $this->text_domain ) . '</li>';
 		echo '<li>' . __( 'Add the webhook and check the ping is ok', $this->text_domain ) . '</li>';
 		echo '</ol>';
@@ -66,6 +73,13 @@ class Dev7EsgsSettings {
 			update_post_meta( $post_id, '_dev7_esgs_enabled', true );
 		} else {
 			delete_post_meta( $post_id, '_dev7_esgs_enabled' );
+		}
+
+		if ( isset( $_POST['dev7_esgs_secret'] ) ) {
+			$secret = edd_sanitize_text_field( $_POST['dev7_esgs_secret'] );
+			update_post_meta( $post_id, '_dev7_esgs_secret', $secret );
+		} else {
+			delete_post_meta( $post_id, '_dev7_esgs_secret' );
 		}
 	}
 

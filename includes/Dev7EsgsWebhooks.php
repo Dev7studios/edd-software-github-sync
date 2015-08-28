@@ -43,7 +43,20 @@ class Dev7EsgsWebhooks {
 		}
 
 		$enabled = get_post_meta( $post_id, '_dev7_esgs_enabled', true ) ? true : false;
+		$secret  = get_post_meta( $post_id, '_dev7_esgs_secret', true );
 		$payload = file_get_contents( 'php://input' );
+
+		if ( $secret ) {
+			$signature = $this->get_http_header( 'X-Hub-Signature' );
+			list( $algo, $hash ) = explode( '=', $signature, 2 );
+			$payload_hash = hash_hmac( $algo, $payload, $secret );
+			if ( $hash !== $payload_hash ) {
+				header( $this->http_protocol() . ' 401 Unauthorized', true, 401 );
+				echo __( 'Error: Invalid signature', $this->text_domain ) . "\n";
+				exit;
+			}
+		}
+
 		if ( ! $enabled ) {
 			header( $this->http_protocol() . ' 501 Not Implemented', true, 501 );
 			echo __( 'Error: Software GitHub Sync disabled', $this->text_domain ) . "\n";
